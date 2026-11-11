@@ -1,0 +1,42 @@
+# Full check log
+
+Every value recorded by `src/build_data.py` on 2026-11-11. See README.md for the plain-language summary.
+
+- **acs_rows**: 681
+- **acs_rows_expected_681**: true
+- **acs_non_numeric_cells**: 0
+- **acs_band_sum_mismatches**: none (all 681 rows OK)
+- **acs_rows_h_total_zero**: 17
+- **acs_totals**: {"h_total": 740754, "h_pov100": 119889, "h_pov185": 210891}
+- **acs_totals_match_expected**: true
+- **tiger_bg_rows_suffolk**: 681
+- **geoid_in_acs_not_tiger**: none
+- **geoid_in_tiger_not_acs**: none
+- **cenpop_missing_for_bg**: none
+- **center_source_counts**: {"cenpop2020": 671, "centroid": 10}
+- **centers_outside_own_polygon**: [{"GEOID": "250250102062", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 5.4}, {"GEOID": "250259815011", "center_source": "cenpop2020", "included": false, "center_dist_outside_m": 327.4}, {"GEOID": "250250920003", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 41.4}, {"GEOID": "250259901010", "center_source": "centroid", "included": false, "center_dist_outside_m": 569.0}, {"GEOID": "250251008004", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 9.8}, {"GEOID": "250250605013", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 23.5}, {"GEOID": "250259818001", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 421.9}, {"GEOID": "250251707011", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 10.4}, {"GEOID": "250259801011", "center_source": "centroid", "included": true, "center_dist_outside_m": 157.8}, {"GEOID": "250251703021", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 1.9}, {"GEOID": "250250001022", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 84.6}, {"GEOID": "250251701013", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 7.4}, {"GEOID": "250251606014", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 5.3}, {"GEOID": "250250203052", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 9.3}]
+- **polygon_centroids_outside_own_polygon**: 10
+- **county_area_km2_dissolved**: 311.36
+- **county_area_km2_tiger**: 311.36
+- **county_symdiff_km2**: 0.0
+- **areawater_features**: 200
+- **land_area_km2**: 150.83
+- **tiger_ALAND_sum_km2**: 150.89
+- **special_area_bgs_98xx**: ["250259815011", "250259811003", "250259811001", "250259813001", "250259812021", "250259818001", "250259812011", "250259815021", "250259816001", "250259810001", "250259807001", "250259803001", "250259801011", "250259817001", "250259812022", "250259811004", "250259819001", "250259809001", "250259811002"]
+- **pantries_input_rows**: 107
+- **pantries_geocode_failed**: none
+- **pantries_geocoded_outside_county**: none
+- **pantries_m**: 107
+- **pantries_missing_capacity**: 107
+- **grid_1000_N**: 154
+- **grid_1000_no_geoid**: 0
+- **grid_1000_special_area**: 33
+- **reach_1000**: {"pairs": 26518, "A_i_min": 4, "A_i_median": 39.0, "A_i_max": 82, "empty_A_i": "none"}
+- **grid_500_N**: 617
+- **grid_500_no_geoid**: 0
+- **grid_500_special_area**: 116
+- **reach_500**: {"pairs": 64875, "A_i_min": 9, "A_i_median": 98.0, "A_i_max": 165, "empty_A_i": "none"}
+- **grid_250_N**: 2429
+- **grid_250_no_geoid**: 0
+- **grid_250_special_area**: 445
+- **reach_250**: {"pairs": 216358, "A_i_min": 35, "A_i_median": 327.0, "A_i_max": 500, "empty_A_i": "none"}
