@@ -265,21 +265,16 @@ measuring anything.
 
 ## Assumptions
 
-These are the assumptions the data rests on. Each one says why it is reasonable and what
-would change if it were dropped.
-
-| # | Assumption | Why it is reasonable | If it does not hold |
-|---|---|---|---|
-| A1 | **All of a block group's demand sits at one point**, its centre `(x_i, y_i)`. | This is the standard simplification in facility-location models. Block groups are small (most are a few hundred metres across). | Distances for people at the edge of a large block group are under- or over-stated. A finer unit (census blocks) would reduce this. |
-| A2 | **People in need live where the block group's residents live on average.** The centre is the centre of *all* residents, used as the centre of people *below the poverty line*. | Poverty counts are not published below block-group level, so there is no official way to weight by poor residents only. | If poorer households cluster in one corner of a block group, the true centre of need is somewhere else. Most block groups are small, so the error is usually a few hundred metres. |
-| A3 | **2020 residential pattern still applies to 2020–2024 poverty counts.** The centres come from the 2020 Census, and the poverty table covers 2020–2024. | Block-group boundaries in Massachusetts did not change over this period, and residential patterns change slowly. | Areas with large new housing developments since 2020 would have centres that are slightly off. |
-| A4 | **Each block's people are at the block's reference point** (the Census method, see Step 2). | Blocks are usually one city block, so the error is tens of metres. | Negligible at the scale of a 250–1000 m grid. |
-| A5 | **The Census estimates are taken at face value.** `h_pov100` and `h_pov185` are used without adjusting for their margin of error. | They are the best available counts at this level. | Margins are large (see `moe_pov100`). A robustness check could vary demand within its margin of error. |
-| A6 | **Travel distance = straight-line distance**, capped at 3 km. | Simple, and consistent across the whole county. | Walking or transit distance is longer, especially across water, highways and rail lines. Road-network distances could replace `d_ij` without changing the rest of the data. |
-| A7 | **The GBFB partner network is the set of existing pantries.** | It is the largest and best-maintained list, and the handover named it. | Independent pantries are missing. For example, Winthrop Community Food Pantry is not in the GBFB network, so Winthrop has no existing pantry in the data. |
-| A8 | **Every GBFB site counts as a pantry**, including meal programmes, mobile markets and hospital pantries. | They all give food to people in need. | If only grocery-style pantries should count, some of the 107 sites would be removed. |
-| A9 | **Listings at the same address are one site.** | They share one physical location, so they are the same distance from everyone. | Their capacities would need to be added together once capacities are known. |
-| A10 | **Candidate sites may be anywhere on land**, including Logan Airport and parks (these are flagged with `special_area`). | It keeps the grid simple and lets the team decide on exclusions. | Unrealistic sites could be chosen. Filter on `special_area` to exclude them. |
+1. **Each block group's demand sits at its 2020 population centre.** All of a block
+   group's people in need are treated as living at one point, the centre of *all* its
+   residents in 2020 (Step 2). Poverty counts aren't published at any finer level, and
+   block groups are small (a few hundred metres across), so the error is usually small.
+2. **Census estimates are taken at face value.** The poverty counts are survey estimates
+   with large margins of error (see `moe_pov100`). They are used as exact numbers.
+3. **Travel distance is straight-line distance**, capped at 3 km. Real walking
+   or transit trips are longer, especially across water, highways and rail lines.
+4. **The existing pantries are the GBFB network.** Independent pantries (e.g. in Winthrop)
+   are missing. Every GBFB site counts, including meal programmes and mobile markets.
 
 ## Decisions still open
 
