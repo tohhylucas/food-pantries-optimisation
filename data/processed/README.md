@@ -4,7 +4,7 @@ This folder holds the input data for the Suffolk County, MA food-pantry location
 This page explains **what data we started with** and **what was done to it, step by step**.
 
 The numbers on this page are filled in automatically by `src/build_data.py` each time it
-runs (last run: 2026-11-25). A full technical log of every check is in
+runs (last run: 2026-11-26). A full technical log of every check is in
 [`checks.md`](checks.md).
 
 ---
@@ -22,7 +22,7 @@ runs (last run: 2026-11-25). A full technical log of every check is in
 4. **Find the existing food pantries.** 107 sites were collected from the Greater Boston
    Food Bank's online locator, and their addresses were turned into map coordinates.
 5. **Lay out possible new pantry sites.** A regular grid of points is placed over the land,
-   one every 1000 m, 500 m or 250 m.
+   one every 1000 m, 500 m, 250 m or 100 m.
 6. **Measure distances.** The distance is measured from every demand point (census block)
    to every pantry or grid point within 3 km.
 7. **Draw maps** to check that everything looks right.
@@ -230,13 +230,15 @@ by the team.
 - Numbered the points after the existing pantries (starting at 108) and recorded which
   block group each point is in.
 - The grids are nested: every 1000 m point is also a 500 m point, and every 500 m point is
-  also a 250 m point. This makes results comparable across spacings.
+  also a 250 m point and a 100 m point. This makes results comparable across spacings.
+  (The 250 m and 100 m grids are not nested in each other, since 250 is not a multiple of 100.)
 
 | Spacing Δ | Number of sites | ID range | In airport/park areas |
 |---|---|---|---|
 | 1000 m | 154 | 108 – 261 | 33 |
 | 500 m | 617 | 108 – 724 | 116 |
 | 250 m | 2,429 | 108 – 2536 | 445 |
+| 100 m | 15,104 | 108 – 15211 | 2707 |
 
 ### Step 6: Measure distances
 *Input: block demand points (Step 2b), block-group centres (Step 2), pantries (Step 4),
@@ -254,6 +256,7 @@ grid (Step 5). Code: `distances()`.*
 | 1000 m | 209,620 | 2 | 36 | 82 | none |
 | 500 m | 526,266 | 7 | 95 | 166 | none |
 | 250 m | 1,777,361 | 27 | 324 | 500 | none |
+| 100 m | 10,542,544 | 150 | 1926 | 2858 | none |
 
 **Block-group centres (used by the interactive page, `distances_*.parquet`):**
 
@@ -262,11 +265,12 @@ grid (Step 5). Code: `distances()`.*
 | 1000 m | 26,518 | 4 | 39 | 82 | none |
 | 500 m | 64,875 | 9 | 98 | 165 | none |
 | 250 m | 216,358 | 35 | 327 | 500 | none |
+| 100 m | 1,278,112 | 198 | 1937 | 2854 | none |
 
 ### Step 7: Draw maps
 *Code: `src/plot_map.py`.*
 
-- `poverty_map_1000.png`, `poverty_map_500.png`, `poverty_map_250.png`: red circles, one per
+- `poverty_map_1000.png`, `_500`, `_250`, `_100`: red circles, one per
   census block (size = people below the poverty line in that block), green dots (existing pantries), grey dots (candidate
   sites) and block-group boundaries. Any spacing can be drawn with `--delta`, or adjusted
   live with a slider using `--interactive`.
@@ -285,9 +289,9 @@ grid (Step 5). Code: `distances()`.*
 | `county_land.geojson` | n/a | The county land outline (water removed) |
 | `county_land_outline.csv` | outline vertex | The same outline as plain `X, Y` (metres), one ring after another separated by an empty row, for plotting (e.g. in the Julia notebook) |
 | `pantries.csv` | existing pantry | ID `j`, name, address, coordinates `X, Y` (metres) and `lon, lat`, `capacity` (blank), geocoder result, containing block group `GEOID` |
-| `grid_1000.csv`, `grid_500.csv`, `grid_250.csv` | candidate site | ID `j`, `X, Y` (metres), `lon, lat`, containing block group `GEOID`, `special_area` flag |
-| `distances_blocks_1000.parquet`, `_500`, `_250` | demand point–site pair within reach | `i` (ID from `demand_blocks.csv`), `j` (site ID), `d_ij` (metres) |
-| `distances_1000.parquet`, `distances_500.parquet`, `distances_250.parquet` | block group–site pair within reach | `i` (block group GEOID), `j` (site ID), `d_ij` (metres) |
+| `grid_1000.csv`, `grid_500.csv`, `grid_250.csv`, `grid_100.csv` | candidate site | ID `j`, `X, Y` (metres), `lon, lat`, containing block group `GEOID`, `special_area` flag |
+| `distances_blocks_1000.parquet`, `_500`, `_250`, `_100` | demand point–site pair within reach | `i` (ID from `demand_blocks.csv`), `j` (site ID), `d_ij` (metres) |
+| `distances_1000.parquet`, `_500`, `_250`, `_100` | block group–site pair within reach | `i` (block group GEOID), `j` (site ID), `d_ij` (metres) |
 | `*.png` | n/a | Maps from Step 7 |
 | `checks.md` | n/a | Full technical log of every check |
 

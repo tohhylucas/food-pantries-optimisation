@@ -1,6 +1,6 @@
 # Full check log
 
-Every value recorded by `src/build_data.py` on 2026-11-25. See README.md for the plain-language summary.
+Every value recorded by `src/build_data.py` on 2026-11-26. See README.md for the plain-language summary.
 
 - **acs_rows**: 681
 - **acs_rows_expected_681**: true
@@ -53,3 +53,8 @@ Every value recorded by `src/build_data.py` on 2026-11-25. See README.md for the
 - **grid_250_special_area**: 445
 - **reach_250**: {"pairs": 216358, "A_i_min": 35, "A_i_median": 327.0, "A_i_max": 500, "empty_A_i": "none"}
 - **reach_blocks_250**: {"pairs": 1777361, "A_i_min": 27, "A_i_median": 324.0, "A_i_max": 500, "empty_A_i": "none"}
+- **grid_100_N**: 15104
+- **grid_100_no_geoid**: 0
+- **grid_100_special_area**: 2707
+- **reach_100**: {"pairs": 1278112, "A_i_min": 198, "A_i_median": 1937.0, "A_i_max": 2854, "empty_A_i": "none"}
+- **reach_blocks_100**: {"pairs": 10542544, "A_i_min": 150, "A_i_median": 1926.0, "A_i_max": 2858, "empty_A_i": "none"}

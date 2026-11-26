@@ -262,7 +262,7 @@ def interactive(start=500):
     fig, ax = plt.subplots(figsize=(10, 11))
     fig.subplots_adjust(bottom=0.08)
     sax = fig.add_axes([0.2, 0.025, 0.6, 0.025])
-    slider = Slider(sax, "Grid Δ (m)", 150, 2000, valinit=start, valstep=50)
+    slider = Slider(sax, "Grid Δ (m)", 100, 2000, valinit=start, valstep=50)
 
     def redraw(delta):
         grid = make_grid(delta, land, bg, m=m, special_geom=special)
@@ -276,7 +276,7 @@ def interactive(start=500):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--delta", type=float, nargs="*", default=[1000, 500, 250])
+    ap.add_argument("--delta", type=float, nargs="*", default=[1000, 500, 250, 100])
     ap.add_argument("--interactive", action="store_true")
     a = ap.parse_args()
     if a.interactive:

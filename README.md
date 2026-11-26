@@ -28,7 +28,7 @@ The margins of error are large. For the below-poverty count, the median block gr
 
 **Supply.** We use the 107 existing pantries listed by the Greater Boston Food Bank (GBFB) partner locator. All 107 were geocoded with the Census Geocoder and all fall inside the county. Their capacities $c_j$ are not published and have been requested from GBFB.
 
-**Candidate sites.** These are the points of a regular grid with spacing $\Delta$ laid over the land, so a new pantry can be placed anywhere at that resolution. There are 154, 617 and 2,429 sites at $\Delta$ = 1000, 500 and 250 m. The grids are nested: every 1000 m site is also a 500 m site, and every 500 m site is also a 250 m site.
+**Candidate sites.** These are the points of a regular grid with spacing $\Delta$ laid over the land, so a new pantry can be placed anywhere at that resolution. There are 154, 617, 2,429 and 15,104 sites at $\Delta$ = 1000, 500, 250 and 100 m. The grids are nested: every 1000 m site is also a 500 m site, and every 500 m site is also a 250 m site and a 100 m site (the 250 m and 100 m grids are not nested in each other).
 
 ## 3. Methods
 
@@ -175,7 +175,7 @@ The model gives the food bank a transparent, data-based ranking of where new pan
 | D4 | **Participation rate** | Serve all of $h_i$, or only the share of people who actually use pantries | To be decided | With realistic capacities, serving everyone in need may be impossible, and unserved demand then dominates the objective. |
 | D5 | **Objective and penalty** $q$ | $q - d$ with a chosen $q$, or $q = D_{\max}$, or distance decay $1/(d + d_0)$ | $q = D_{\max}$: serving someone is worth $D_{\max} - d$, which falls to zero at the reach limit, with no extra parameter | We tested raw $1/d$ and rejected it. At $\Delta$ = 500 m it placed pantries within 6–34 m of block-group centres, served fewer people (99,686 vs 100,600) and had a longer average distance (555 m vs 431 m). |
 | D6 | **Reach limit** $D_{\max}$ | 1 to 3 km | Report a sensitivity range rather than one value | It decides which pairs are allowed at all. At 3 km every block group can reach at least one site. |
-| D7 | **Grid spacing** $\Delta$ | 1000, 500 or 250 m | 1000 m to explore, 500 m for final results, 250 m to check stability | Finer grids give more site choices but take longer to solve. |
+| D7 | **Grid spacing** $\Delta$ | 1000, 500, 250 or 100 m | 1000 m to explore, 500 m for final results, 250 m to check stability, 100 m for the finest placement | Finer grids give more site choices but take longer to solve. |
 | D8 | **Range of** $K$ | 0 to 20 or more | 0 to 20 for the curve of people served against $K$ | It shows diminishing returns and supports budget decisions. |
 | D9 | **Distance type** | Straight-line; walking network; transit time | Straight-line now; network distance if time allows | Barriers such as the harbour and highways make straight-line distance optimistic. |
 | D10 | **Completeness of supply** | GBFB only; add independents from Project Bread and Mass 211 | Add independents where they fill gaps (e.g. Winthrop) | Missing pantries make some areas look more underserved than they are. |

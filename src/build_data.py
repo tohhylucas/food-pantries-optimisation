@@ -39,7 +39,7 @@ BLOCK_KEEP = ["GEOID20", "POP20", "HOUSING20", "INTPTLAT20", "INTPTLON20", "ALAN
 DEMAND_COLS = ["h_total", "h_pov100", "h_pov185"]
 PANTRY_IN = RAW / "pantries" / "pantries_input.csv"
 
-DELTAS = [1000, 500, 250]
+DELTAS = [1000, 500, 250, 100]
 
 # Collected check results, written into README.md at the end.
 REPORT: dict[str, object] = {}
@@ -256,7 +256,8 @@ def make_grid(delta_m: float, land, bg: gpd.GeoDataFrame, m: int = 0,
     IDs start at m+1 so that J_E = 1..m and J_C = m+1..m+N.
     """
     minx, miny, maxx, maxy = land.bounds
-    # Anchor the lattice to multiples of delta so grids nest (250 ⊃ 500 ⊃ 1000).
+    # Anchor the lattice to multiples of delta so grids nest (250 ⊃ 500 ⊃ 1000 and
+    # 100 ⊃ 500 ⊃ 1000; 100 m does not contain the 250 m grid, as 250 is not a multiple of 100).
     xs = np.arange(np.ceil(minx / delta_m) * delta_m, maxx + 1e-9, delta_m)
     ys = np.arange(np.ceil(miny / delta_m) * delta_m, maxy + 1e-9, delta_m)
     X, Y = np.meshgrid(xs, ys)
@@ -350,17 +351,22 @@ def load_pantries(county=None) -> gpd.GeoDataFrame:
 # --------------------------------------------------------------------------- #
 # TODO 6 - distances and reachable sets
 # --------------------------------------------------------------------------- #
-def distances(ids, x, y, sites: pd.DataFrame, dmax: float) -> pd.DataFrame:
-    """All (demand point i, site j) pairs within dmax metres."""
+def distances(ids, x, y, sites: pd.DataFrame, dmax: float, chunk: int = 500) -> pd.DataFrame:
+    """All (demand point i, site j) pairs within dmax metres.
+
+    Demand points are processed in chunks so the full distance matrix is never held
+    in memory (the 100 m grid has ~15,000 sites).
+    """
+    ids, x, y = np.asarray(ids), np.asarray(x, float), np.asarray(y, float)
     sx, sy = sites["X"].to_numpy(float), sites["Y"].to_numpy(float)
-    d = np.hypot(np.asarray(x, float)[:, None] - sx[None, :],
-                 np.asarray(y, float)[:, None] - sy[None, :])
-    ii, jj = np.nonzero(d <= dmax)
-    return pd.DataFrame({
-        "i": np.asarray(ids)[ii],
-        "j": sites["j"].to_numpy()[jj].astype(int),
-        "d_ij": d[ii, jj].round(1),
-    })
+    sj = sites["j"].to_numpy().astype(int)
+    parts = []
+    for s in range(0, len(x), chunk):
+        d = np.hypot(x[s:s + chunk, None] - sx[None, :], y[s:s + chunk, None] - sy[None, :])
+        ii, jj = np.nonzero(d <= dmax)
+        parts.append(pd.DataFrame({"i": ids[s:s + chunk][ii], "j": sj[jj],
+                                   "d_ij": d[ii, jj].round(1)}))
+    return pd.concat(parts, ignore_index=True)
 
 
 def reachable_report(dist: pd.DataFrame, ids) -> dict:
@@ -512,7 +518,7 @@ runs (last run: {date.today().isoformat()}). A full technical log of every check
 4. **Find the existing food pantries.** {m} sites were collected from the Greater Boston
    Food Bank's online locator, and their addresses were turned into map coordinates.
 5. **Lay out possible new pantry sites.** A regular grid of points is placed over the land,
-   one every 1000 m, 500 m or 250 m.
+   one every 1000 m, 500 m, 250 m or 100 m.
 6. **Measure distances.** The distance is measured from every demand point (census block)
    to every pantry or grid point within {dmax / 1000:g} km.
 7. **Draw maps** to check that everything looks right.
@@ -720,7 +726,8 @@ by the team.
 - Numbered the points after the existing pantries (starting at {m + 1}) and recorded which
   block group each point is in.
 - The grids are nested: every 1000 m point is also a 500 m point, and every 500 m point is
-  also a 250 m point. This makes results comparable across spacings.
+  also a 250 m point and a 100 m point. This makes results comparable across spacings.
+  (The 250 m and 100 m grids are not nested in each other, since 250 is not a multiple of 100.)
 
 | Spacing Δ | Number of sites | ID range | In airport/park areas |
 |---|---|---|---|
@@ -750,7 +757,7 @@ grid (Step 5). Code: `distances()`.*
 ### Step 7: Draw maps
 *Code: `src/plot_map.py`.*
 
-- `poverty_map_1000.png`, `poverty_map_500.png`, `poverty_map_250.png`: red circles, one per
+- `poverty_map_1000.png`, `_500`, `_250`, `_100`: red circles, one per
   census block (size = people below the poverty line in that block), green dots (existing pantries), grey dots (candidate
   sites) and block-group boundaries. Any spacing can be drawn with `--delta`, or adjusted
   live with a slider using `--interactive`.
@@ -769,9 +776,9 @@ grid (Step 5). Code: `distances()`.*
 | `county_land.geojson` | n/a | The county land outline (water removed) |
 | `county_land_outline.csv` | outline vertex | The same outline as plain `X, Y` (metres), one ring after another separated by an empty row, for plotting (e.g. in the Julia notebook) |
 | `pantries.csv` | existing pantry | ID `j`, name, address, coordinates `X, Y` (metres) and `lon, lat`, `capacity` (blank), geocoder result, containing block group `GEOID` |
-| `grid_1000.csv`, `grid_500.csv`, `grid_250.csv` | candidate site | ID `j`, `X, Y` (metres), `lon, lat`, containing block group `GEOID`, `special_area` flag |
-| `distances_blocks_1000.parquet`, `_500`, `_250` | demand point–site pair within reach | `i` (ID from `demand_blocks.csv`), `j` (site ID), `d_ij` (metres) |
-| `distances_1000.parquet`, `distances_500.parquet`, `distances_250.parquet` | block group–site pair within reach | `i` (block group GEOID), `j` (site ID), `d_ij` (metres) |
+| `grid_1000.csv`, `grid_500.csv`, `grid_250.csv`, `grid_100.csv` | candidate site | ID `j`, `X, Y` (metres), `lon, lat`, containing block group `GEOID`, `special_area` flag |
+| `distances_blocks_1000.parquet`, `_500`, `_250`, `_100` | demand point–site pair within reach | `i` (ID from `demand_blocks.csv`), `j` (site ID), `d_ij` (metres) |
+| `distances_1000.parquet`, `_500`, `_250`, `_100` | block group–site pair within reach | `i` (block group GEOID), `j` (site ID), `d_ij` (metres) |
 | `*.png` | n/a | Maps from Step 7 |
 | `checks.md` | n/a | Full technical log of every check |
 
