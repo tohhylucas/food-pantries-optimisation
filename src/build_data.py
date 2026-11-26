@@ -765,6 +765,7 @@ grid (Step 5). Code: `distances()`.*
 | `blockgroups.geojson` | block group | `GEOID`, name, the four people counts, centre `x_i, y_i` (metres), `included`, shape |
 | `demand_blocks.csv` | demand point (populated census block) | `i` (15-digit block ID, or the block-group ID for a fallback point), block group `GEOID`, `x_i, y_i` (metres), `lon, lat`, 2020 block population `pop_block`, its `share` of the block group, the three people counts, `source` (`block` or `bg_point`) |
 | `county_land.geojson` | n/a | The county land outline (water removed) |
+| `county_land_outline.csv` | outline vertex | The same outline as plain `X, Y` (metres), one ring after another separated by an empty row, for plotting (e.g. in the Julia notebook) |
 | `pantries.csv` | existing pantry | ID `j`, name, address, coordinates `X, Y` (metres) and `lon, lat`, `capacity` (blank), geocoder result |
 | `grid_1000.csv`, `grid_500.csv`, `grid_250.csv` | candidate site | ID `j`, `X, Y` (metres), `lon, lat`, containing block group `GEOID`, `special_area` flag |
 | `distances_blocks_1000.parquet`, `_500`, `_250` | demand point–site pair within reach | `i` (ID from `demand_blocks.csv`), `j` (site ID), `d_ij` (metres) |
@@ -824,6 +825,21 @@ Run from the project folder:
     (OUT / "README.md").write_text(text, encoding="utf-8")
 
 
+def write_outline(geom, path: Path, tol_m: float = 5.0) -> None:
+    """Land outline as plain X,Y rows (metres) for plotting without a GIS library.
+
+    Each ring (coastline or lake shore) ends with an empty row, so plotting tools
+    that break lines at missing values draw the rings separately.
+    """
+    geom = geom.simplify(tol_m, preserve_topology=True)
+    polys = getattr(geom, "geoms", [geom])
+    rows = []
+    for p in polys:
+        for ring in [p.exterior, *p.interiors]:
+            rows += [(round(x, 1), round(y, 1)) for x, y in ring.coords] + [(None, None)]
+    pd.DataFrame(rows, columns=["X", "Y"]).to_csv(path, index=False)
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--dmax", type=float, default=3000.0)
@@ -845,6 +861,7 @@ def main(argv=None) -> int:
     bg[keep].to_crs(CRS_LL).to_file(OUT / "blockgroups.geojson", driver="GeoJSON")
     gpd.GeoDataFrame({"name": ["Suffolk County, MA (land)"]}, geometry=[land], crs=CRS_M) \
         .to_crs(CRS_LL).to_file(OUT / "county_land.geojson", driver="GeoJSON")
+    write_outline(land, OUT / "county_land_outline.csv")
 
     blocks.round({"x_i": 1, "y_i": 1, "share": 6, "h_total": 4, "h_pov100": 4,
                   "h_pov185": 4}).to_csv(OUT / "demand_blocks.csv", index=False)
