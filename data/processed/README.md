@@ -220,8 +220,10 @@ interactive optimiser page (`app/`), which stays at block-group level to keep it
    **107 of 107 found**, all inside the county.
 6. Numbered the pantries 1 to 107.
 
-Pantry **capacity is not published**, so it is left blank and must be supplied or assumed
-by the team.
+Pantry **capacity is not published**, so the `capacity` column is left blank. The model
+instead gives every pantry the same estimated capacity of **900 people per month**, the
+Massachusetts network average (about 826,000 people served monthly through over 900
+programs, MEFAP FY23 report), tested at 600 and 1,200. See the main README, Section 2.
 
 ### Step 5: Lay out possible new pantry sites
 *Input: the land outline from Step 3. Code: `make_grid(delta_m)`.*
@@ -337,7 +339,9 @@ measuring anything.
 
 - **Which people count as "in need":** `h_pov100` (below the poverty line) or `h_pov185`
   (below 1.85 × the poverty line). Confirm against the pantries' actual eligibility rules.
-- **Pantry capacities:** unknown for all 107 existing pantries, and needed for new ones.
+- **Pantry capacities:** not published for any of the 107 existing pantries. The model uses a
+  network-average estimate of 900 people per month for every pantry (main README, Section 2);
+  replace it if GBFB shares pantry-level data.
 - **Model settings:** grid spacing Δ, maximum distance `D_max`, the maximum number of new
   pantries `K`, and the penalty `q` for each person left unserved.
 

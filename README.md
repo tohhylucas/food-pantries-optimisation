@@ -26,7 +26,11 @@ The margins of error are large. For the below-poverty count, the median block gr
 
 **Geography.** 2024 TIGER/Line polygons give each block group's boundary. Its demand point $(x_i, y_i)$ is the 2020 Census population-weighted centre of population. Removing water (Boston Harbor, rivers, ponds) leaves 150.8 km² of land. All coordinates are in metres (EPSG:26986).
 
-**Supply.** We use the 107 existing pantries listed by the Greater Boston Food Bank (GBFB) partner locator. All 107 were geocoded with the Census Geocoder and all fall inside the county. Their capacities $c_j$ are not published and have been requested from GBFB.
+**Supply.** We use the 107 existing pantries listed by the Greater Boston Food Bank (GBFB) partner locator. All 107 were geocoded with the Census Geocoder and all fall inside the county.
+
+**Capacity.** No public source gives how many people an individual pantry serves: GBFB and the state report food volumes only per food bank, and the locator lists opening schedules but no volumes. We therefore give every pantry, existing or new, the same capacity, **$c_j$ = 900 people per month**. This is the Massachusetts network average: the four Massachusetts food banks' partners reported serving about 826,000 people every month through over 900 emergency food programs in 2023 ([MEFAP FY23 Core Food & MassGrown Summary Report](https://www.gbfb.org/wp-content/uploads/2024/05/GBFB_MEFAPFY23_Final-Report.pdf), p. 3), and 826,000 / 900 ≈ 900. Two other figures are consistent with it: GBFB distributed 107.3 million lb in FY23 (same report, Table 2) through more than 600 partner agencies, about 15,000 lb per agency per month; and a survey of 27 food pantries in Southern California found a median of 450 households per month ([community-engaged pantry study](https://pmc.ncbi.nlm.nih.gov/articles/PMC13059207/)), about 1,100 people at roughly 2.5 people per household. The 826,000 counts a person once at every program they use, and it includes meal programs and shelters, so 900 is an average rather than a measured value for any one pantry. We therefore test 600 and 1,200 people per month as well.
+
+**Time unit.** Demand and capacity are both per month: each person in need is assumed to visit a pantry about once a month, which is how the capacity figure above is measured. Scaling both to a day would divide every term of the objective by the same factor and leave the solution unchanged.
 
 **Candidate sites.** These are the points of a regular grid with spacing $\Delta$ laid over the land, so a new pantry can be placed anywhere at that resolution. There are 154, 617 and 2,429 sites at $\Delta$ = 1000, 500 and 250 m. The grids are nested: every 1000 m site is also a 500 m site, and every 500 m site is also a 250 m site.
 
@@ -43,7 +47,7 @@ We use a capacitated facility location model, a mixed-integer optimization probl
 | $d_{ij}$ | straight-line distance from block group $i$ to site $j$, in metres |
 | $A_i$ | sites within reach of block group $i$: $A_i = \lbrace j : d_{ij} \le D_{\max} \rbrace$ |
 | $h_i$ | people to serve in block group $i$ |
-| $c_j$ | capacity of pantry $j$, in people |
+| $c_j$ | capacity of pantry $j$, in people per month (900 for every pantry; see Section 2) |
 | $K$ | maximum number of new pantries |
 | $J_{\max}$ | maximum total pantries per block group |
 | $E_g$, $C_g$ | number of existing pantries and set of candidate sites physically in block group $g$ |
@@ -123,7 +127,7 @@ Numbers of people served and unserved cannot be negative, and each site is eithe
 
 ## 4. Expected results
 
-**Preliminary run.** The capacities in this run are placeholders, not real data.
+**Preliminary run.** The capacities in this run (800 / 1,500) were placeholders chosen before the capacity estimate in Section 2. Later runs use 900 people per month for every pantry.
 
 | Setting | Value |
 |---|---|
@@ -134,7 +138,7 @@ Numbers of people served and unserved cannot be negative, and each site is eithe
 | **Average distance travelled** | **0.45 km** |
 | Optimality gap | within 1% of the proven optimum |
 
-Every pantry is full in this run, so the result is driven by capacity. Real capacity data is therefore our top priority.
+Every pantry is full in this run, so the result is driven by capacity. This is why we replaced the placeholders with the network-average estimate and test it from 600 to 1,200.
 
 **Final report.** We expect to deliver:
 
@@ -148,7 +152,7 @@ We also expect the recommended sites to stabilise once the grid is fine relative
 
 The model gives the food bank a transparent, data-based ranking of where new pantries add the most coverage. It also shows how much each additional pantry is worth, which helps with budget decisions. The robustness test shows which recommendations hold up despite uncertain survey data.
 
-**Limitations.** Residents are placed at block-group centres. Distances are straight-line rather than travel times. Capacity data is still missing. Only GBFB-network pantries are included. The model does not force people to use their nearest pantry.
+**Limitations.** Residents are placed at block-group centres. Distances are straight-line rather than travel times. Pantry capacities are a network average (900 people per month), not measured per pantry. Only GBFB-network pantries are included. The model does not force people to use their nearest pantry.
 
 <div style="page-break-after: always;"></div>
 
@@ -161,7 +165,8 @@ The model gives the food bank a transparent, data-based ranking of where new pan
 | A3 | **Census estimates are taken at face value.** | They are the best available counts at this level. | Margins are large (median 87% of the estimate). The robustness test addresses this. |
 | A4 | **Travel distance is straight-line distance**, capped at $D_{\max}$. | It is simple and consistent across the county. | Real walking or transit trips are longer, especially across water, highways and rail lines. $d_{ij}$ can be replaced by network distances without changing the rest of the model. |
 | A5 | **Existing supply is the GBFB network**, and every GBFB site counts, including meal programmes and mobile markets. | It is the largest maintained list of food-assistance sites in the county. | Independent pantries are missing. For example, Winthrop Community Food Pantry is not in the network, so Winthrop has no existing pantry in our data. |
-| A6 | **All pantries of a type have the same capacity**: one value for existing pantries, one for new ones. | Real capacities are not yet available. | Until GBFB data arrives, results show *where* need is unmet, not exact numbers served. |
+| A6 | **Every pantry has the same capacity, 900 people per month**, existing and new alike. | Pantry-level volumes are not published; 900 is the Massachusetts network average (about 826,000 people per month through over 900 programs, MEFAP FY23). | Large pantries are under-stated and small ones over-stated, so individual sites may be full or idle in reality when the model says otherwise. Results are tested at 600 and 1,200. |
+| A7 | **Each person in need visits a pantry about once a month**, so demand and capacity are both per month. | Pantry use is commonly reported as people served per month, which is how the capacity figure is measured. | If people visit more often, effective capacity per person is lower and more people go unserved. |
 
 <div style="page-break-after: always;"></div>
 
@@ -170,8 +175,8 @@ The model gives the food bank a transparent, data-based ranking of where new pan
 | # | Decision | Options | Recommendation | Why it matters |
 |---|---|---|---|---|
 | D1 | **Who counts as "in need"**, $h_i$ | Below poverty (119,889); below 1.85 × poverty (210,891); everyone (740,754) | Below poverty, then confirm against the pantries' actual eligibility rules | It sets the size and location of demand. Using 1.85 × also requires computing that count's margin of error for the robustness test. |
-| D2 | **Capacity of existing pantries**, $c_j$ for $j \in J_E$ | GBFB data; a proxy such as weekly opening hours from the locator; a uniform value | Request from GBFB; use opening hours as a fallback | Every pantry is full in our preliminary run, so this drives the results. Capacity must be in *people per period*; GBFB likely reports pounds or households, so a conversion is needed. |
-| D3 | **Capacity of a new pantry**, $c_j$ for $j \in J_C$ | A fixed value; the median existing capacity; a range | The median existing capacity, once known | It sets how much each new pantry can add. |
+| D2 | **Capacity of existing pantries**, $c_j$ for $j \in J_E$ | GBFB data; a proxy such as weekly opening hours from the locator; a uniform value | **Decided:** a uniform 900 people per month (network average, Section 2), tested at 600 and 1,200. Replace with GBFB data if it becomes available | Every pantry is full in our preliminary run, so this drives the results. Capacity must be in *people per period*; GBFB likely reports pounds or households, so a conversion is needed. |
+| D3 | **Capacity of a new pantry**, $c_j$ for $j \in J_C$ | A fixed value; the median existing capacity; a range | **Decided:** the same 900 people per month as an existing pantry | It sets how much each new pantry can add. |
 | D4 | **Participation rate** | Serve all of $h_i$, or only the share of people who actually use pantries | To be decided | With realistic capacities, serving everyone in need may be impossible, and unserved demand then dominates the objective. |
 | D5 | **Objective and penalty** $q$ | $q - d$ with a chosen $q$, or $q = D_{\max}$, or distance decay $1/(d + d_0)$ | $q = D_{\max}$: serving someone is worth $D_{\max} - d$, which falls to zero at the reach limit, with no extra parameter | We tested raw $1/d$ and rejected it. At $\Delta$ = 500 m it placed pantries within 6–34 m of block-group centres, served fewer people (99,686 vs 100,600) and had a longer average distance (555 m vs 431 m). |
 | D6 | **Reach limit** $D_{\max}$ | 1 to 3 km | Report a sensitivity range rather than one value | It decides which pairs are allowed at all. At 3 km every block group can reach at least one site. |
