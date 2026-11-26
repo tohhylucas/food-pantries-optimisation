@@ -1,1 +1,4 @@
 .venv
+
+# Statewide census-block file (102 MB, over GitHub's limit); suffolk_blocks_2020.csv is the extract used
+data/raw/tiger_block/*.zip
