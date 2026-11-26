@@ -244,6 +244,11 @@ def build_land(bg: gpd.GeoDataFrame):
 # --------------------------------------------------------------------------- #
 # TODO 4 - candidate grid
 # --------------------------------------------------------------------------- #
+def site_geoids(sites: gpd.GeoDataFrame, bg: gpd.GeoDataFrame) -> pd.Series:
+    joined = gpd.sjoin(sites, bg[["GEOID", "geometry"]], how="left", predicate="intersects")
+    return joined.loc[~joined.index.duplicated(keep="first"), "GEOID"]
+
+
 def make_grid(delta_m: float, land, bg: gpd.GeoDataFrame, m: int = 0,
               special_geom=None) -> gpd.GeoDataFrame:
     """Candidate sites every `delta_m` metres inside the land polygon.
@@ -258,10 +263,7 @@ def make_grid(delta_m: float, land, bg: gpd.GeoDataFrame, m: int = 0,
     pts = gpd.GeoDataFrame(geometry=gpd.points_from_xy(X.ravel(), Y.ravel()), crs=CRS_M)
     pts = pts[pts.within(land)].reset_index(drop=True)
 
-    joined = gpd.sjoin(pts, bg[["GEOID", "geometry"]], how="left", predicate="intersects")
-    joined = joined[~joined.index.duplicated(keep="first")]
-    grid = gpd.GeoDataFrame(
-        {"GEOID": joined["GEOID"].values}, geometry=joined.geometry.values, crs=CRS_M)
+    grid = pts.assign(GEOID=site_geoids(pts, bg))
     grid["X"], grid["Y"] = grid.geometry.x, grid.geometry.y
     ll = grid.geometry.to_crs(CRS_LL)
     grid["lon"], grid["lat"] = ll.x.round(6), ll.y.round(6)
@@ -766,7 +768,7 @@ grid (Step 5). Code: `distances()`.*
 | `demand_blocks.csv` | demand point (populated census block) | `i` (15-digit block ID, or the block-group ID for a fallback point), block group `GEOID`, `x_i, y_i` (metres), `lon, lat`, 2020 block population `pop_block`, its `share` of the block group, the three people counts, `source` (`block` or `bg_point`) |
 | `county_land.geojson` | n/a | The county land outline (water removed) |
 | `county_land_outline.csv` | outline vertex | The same outline as plain `X, Y` (metres), one ring after another separated by an empty row, for plotting (e.g. in the Julia notebook) |
-| `pantries.csv` | existing pantry | ID `j`, name, address, coordinates `X, Y` (metres) and `lon, lat`, `capacity` (blank), geocoder result |
+| `pantries.csv` | existing pantry | ID `j`, name, address, coordinates `X, Y` (metres) and `lon, lat`, `capacity` (blank), geocoder result, containing block group `GEOID` |
 | `grid_1000.csv`, `grid_500.csv`, `grid_250.csv` | candidate site | ID `j`, `X, Y` (metres), `lon, lat`, containing block group `GEOID`, `special_area` flag |
 | `distances_blocks_1000.parquet`, `_500`, `_250` | demand point–site pair within reach | `i` (ID from `demand_blocks.csv`), `j` (site ID), `d_ij` (metres) |
 | `distances_1000.parquet`, `distances_500.parquet`, `distances_250.parquet` | block group–site pair within reach | `i` (block group GEOID), `j` (site ID), `d_ij` (metres) |
@@ -851,6 +853,10 @@ def main(argv=None) -> int:
     blocks = load_blocks(bg)
     county, land, special_geom = build_land(bg)
     pantries = load_pantries(county)
+    pantries["GEOID"] = site_geoids(pantries, bg)
+    unmapped = pantries.loc[pantries["GEOID"].isna(), "j"].tolist()
+    if unmapped:
+        raise ValueError(f"Could not assign a block group to pantry IDs {unmapped}")
     m = len(pantries)
 
     # blockgroups.geojson

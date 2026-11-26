@@ -45,6 +45,8 @@ We use a capacitated facility location model, a mixed-integer optimization probl
 | $h_i$ | people to serve in block group $i$ |
 | $c_j$ | capacity of pantry $j$, in people |
 | $K$ | maximum number of new pantries |
+| $J_{\max}$ | maximum total pantries per block group |
+| $E_g$, $C_g$ | number of existing pantries and set of candidate sites physically in block group $g$ |
 | $q$ | penalty per person left unserved, in metres |
 
 **Decision variables.** $b_j \in \lbrace 0,1 \rbrace$ equals 1 if a pantry is built at candidate site $j$. $w_{ij} \ge 0$ is the number of people from block group $i$ served at pantry $j$. $u_i \ge 0$ is the number of people in block group $i$ left unserved.
@@ -55,7 +57,7 @@ $$
 \min \ \sum_{i \in I} \sum_{j \in A_i} d_{ij} w_{ij} + q \sum_{i \in I} u_i
 $$
 
-**Constraints.** The model has six groups of constraints.
+**Constraints.** The model has seven groups of constraints.
 
 **(1) Every person in need is either served or counted as unserved.**
 
@@ -97,7 +99,15 @@ $$
 
 This is the budget on new pantries. It is an inequality, so the model may build fewer than $K$ if additional pantries would not reduce the objective.
 
-**(6) Variable domains.**
+**(6) At most $J_{\max}$ total pantries per block group.**
+
+$$
+E_g + \sum_{j \in C_g} b_j \le J_{\max} \quad \forall g
+$$
+
+The cap counts existing and new pantries. Because existing pantries stay open, the smallest feasible cap is the largest existing count across all block groups. That count is 2 in the current data, so the notebook sets $J_{\max}=2$. The countywide limit $K$ also applies.
+
+**(7) Variable domains.**
 
 $$
 w_{ij} \ge 0, \quad u_i \ge 0, \quad b_j \in \lbrace 0,1 \rbrace

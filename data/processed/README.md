@@ -284,7 +284,7 @@ grid (Step 5). Code: `distances()`.*
 | `demand_blocks.csv` | demand point (populated census block) | `i` (15-digit block ID, or the block-group ID for a fallback point), block group `GEOID`, `x_i, y_i` (metres), `lon, lat`, 2020 block population `pop_block`, its `share` of the block group, the three people counts, `source` (`block` or `bg_point`) |
 | `county_land.geojson` | n/a | The county land outline (water removed) |
 | `county_land_outline.csv` | outline vertex | The same outline as plain `X, Y` (metres), one ring after another separated by an empty row, for plotting (e.g. in the Julia notebook) |
-| `pantries.csv` | existing pantry | ID `j`, name, address, coordinates `X, Y` (metres) and `lon, lat`, `capacity` (blank), geocoder result |
+| `pantries.csv` | existing pantry | ID `j`, name, address, coordinates `X, Y` (metres) and `lon, lat`, `capacity` (blank), geocoder result, containing block group `GEOID` |
 | `grid_1000.csv`, `grid_500.csv`, `grid_250.csv` | candidate site | ID `j`, `X, Y` (metres), `lon, lat`, containing block group `GEOID`, `special_area` flag |
 | `distances_blocks_1000.parquet`, `_500`, `_250` | demand point–site pair within reach | `i` (ID from `demand_blocks.csv`), `j` (site ID), `d_ij` (metres) |
 | `distances_1000.parquet`, `distances_500.parquet`, `distances_250.parquet` | block group–site pair within reach | `i` (block group GEOID), `j` (site ID), `d_ij` (metres) |
