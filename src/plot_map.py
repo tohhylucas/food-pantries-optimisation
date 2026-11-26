@@ -7,8 +7,10 @@ Run from the project root after src/build_data.py:
 
 Outputs (data/processed/):
     qa_map.png               TODO 8 QA map at delta = 500 m
-    poverty_map_{delta}.png  red = people below poverty per block group,
+    poverty_map_{delta}.png  red = people below poverty per census block (block-group
+                             counts split by 2020 block population),
                              green = existing pantries, grey = candidate grid
+    demand_before_after.png  demand points at block-group centres vs census blocks
 """
 from __future__ import annotations
 
@@ -47,7 +49,8 @@ def load():
     special = bg[bg["GEOID"].str[5:7] == "98"].geometry.union_all()
     bg_land = bg.copy()
     bg_land["geometry"] = bg.geometry.intersection(land)  # draw boundaries on land only
-    return bg, bg_land, land, pantries, special
+    dem = pd.read_csv(OUT / "demand_blocks.csv", dtype={"i": str, "GEOID": str})
+    return bg, bg_land, land, pantries, special, dem
 
 
 def _base(ax, bg_land, land):
@@ -79,17 +82,17 @@ def _pantry_sizes(p):
     return np.where(cap.notna(), cap * PANTRY_AREA_PER_PERSON, PANTRY_DEFAULT_AREA)
 
 
-def draw_poverty_map(ax, bg, bg_land, land, pantries, grid, delta):
-    """Red circle per block group (area ∝ h_pov100), green pantries, grey grid."""
+def draw_poverty_map(ax, bg, bg_land, land, pantries, grid, delta, dem):
+    """Red circle per census-block demand point (area ∝ h_pov100), green pantries, grey grid."""
     ax.clear()
     _base(ax, bg_land, land)
 
     ax.scatter(grid["X"], grid["Y"], s=2 if delta < 400 else 5, color=GRID_GREY,
                alpha=0.55, linewidths=0, zorder=2)
 
-    inc = bg[bg["included"] & (bg["h_pov100"] > 0)].sort_values("h_pov100", ascending=False)
+    inc = dem[dem["h_pov100"] > 0].sort_values("h_pov100", ascending=False)
     ax.scatter(inc["x_i"], inc["y_i"], s=inc["h_pov100"] * POV_AREA_PER_PERSON,
-               facecolor=RED, edgecolor=RED_EDGE, alpha=0.45, linewidths=0.4, zorder=3)
+               facecolor=RED, edgecolor=RED_EDGE, alpha=0.5, linewidths=0.25, zorder=3)
 
     if len(pantries):
         ax.scatter(pantries["X"], pantries["Y"], s=_pantry_sizes(pantries), color=GREEN,
@@ -100,7 +103,7 @@ def draw_poverty_map(ax, bg, bg_land, land, pantries, grid, delta):
         Line2D([], [], marker="o", linestyle="", markersize=np.sqrt(v * POV_AREA_PER_PERSON),
                markerfacecolor=RED, markeredgecolor=RED_EDGE, alpha=0.6,
                label=f"{v:,} people below poverty")
-        for v in (100, 500, 1000)
+        for v in (20, 100, 300)
     ]
     no_cap = len(pantries) and pd.to_numeric(pantries["capacity"], errors="coerce").isna().all()
     pantry_label = (f"Existing pantry (m = {len(pantries)})"
@@ -119,13 +122,13 @@ def draw_poverty_map(ax, bg, bg_land, land, pantries, grid, delta):
     ax.set_title(
         f"Suffolk County, MA — people below the poverty line (ACS 2020–24, C17002) "
         f"and candidate pantry grid\n"
-        f"{int(inc['h_pov100'].sum()):,} people below 1.00× poverty across "
-        f"{int(bg['included'].sum())} populated block groups",
+        f"{inc['h_pov100'].sum():,.0f} people below 1.00× poverty, split from "
+        f"{int(bg['included'].sum())} block groups over {len(inc):,} census blocks by 2020 population",
         fontsize=10, color=INK, loc="left")
 
 
-def draw_qa_map(ax, fig, bg, bg_land, land, pantries, grid, delta):
-    """TODO 8: shading by h_pov100, centres, grid, pantries, outline."""
+def draw_qa_map(ax, fig, bg, bg_land, land, pantries, grid, delta, dem):
+    """TODO 8: shading by h_pov100, block demand points, grid, pantries, outline."""
     _base(ax, bg_land, land)
     shaded = bg_land[bg_land["included"]]
     shaded.plot(ax=ax, column="h_pov100", cmap="Oranges", linewidth=0.3,
@@ -136,18 +139,20 @@ def draw_qa_map(ax, fig, bg, bg_land, land, pantries, grid, delta):
                                        edgecolor="#bbbbbb", linewidth=0.3, zorder=1)
     gpd.GeoSeries([land], crs=CRS_M).boundary.plot(ax=ax, color=INK, linewidth=0.9, zorder=2)
     ax.scatter(grid["X"], grid["Y"], s=4, color="#4a6fa5", alpha=0.45, linewidths=0, zorder=3)
-    ax.scatter(bg["x_i"], bg["y_i"], s=4, color=INK, linewidths=0, zorder=4)
-    bad = bg[~bg["center_inside_polygon"]]
+    blk = dem[dem["source"] == "block"]
+    ax.scatter(blk["x_i"], blk["y_i"], s=1.5, color=INK, linewidths=0, zorder=4)
+    bad = dem[dem["source"] != "block"]
     ax.scatter(bad["x_i"], bad["y_i"], s=40, facecolor="none", edgecolor="#c51b8a",
                linewidths=1.0, zorder=5)
     if len(pantries):
         ax.scatter(pantries["X"], pantries["Y"], marker="^", s=55, color=GREEN,
                    edgecolor="white", linewidths=0.8, zorder=6)
     handles = [
-        Line2D([], [], marker="o", linestyle="", markersize=3, color=INK,
-               label="Block-group centre (x_i, y_i)"),
+        Line2D([], [], marker="o", linestyle="", markersize=2, color=INK,
+               label=f"Demand point: populated census block ({len(blk):,})"),
         Line2D([], [], marker="o", linestyle="", markersize=7, markerfacecolor="none",
-               markeredgecolor="#c51b8a", label=f"Centre outside its polygon ({len(bad)})"),
+               markeredgecolor="#c51b8a",
+               label=f"Block group with no 2020 block population, kept at centroid ({len(bad)})"),
         Line2D([], [], marker="o", linestyle="", markersize=3, color="#4a6fa5", alpha=0.6,
                label=f"Candidate grid, Δ = {delta:g} m (N = {len(grid):,})"),
         Line2D([], [], marker="^", linestyle="", markersize=7, color=GREEN,
@@ -164,13 +169,72 @@ def draw_qa_map(ax, fig, bg, bg_land, land, pantries, grid, delta):
                  fontsize=10, color=INK, loc="left")
 
 
+def draw_before_after(bg, bg_land, land, dem, zoom_bg="250250820001", zoom_half=1100):
+    """Demand points before (one per block-group centre) and after (one per census block).
+
+    Top row: whole county. Bottom row: close-up around block group `zoom_bg`.
+    Circle area ∝ people below poverty, same scale in every panel.
+    """
+    inc = bg[bg["included"] & (bg["h_pov100"] > 0)]
+    blk = dem[dem["h_pov100"] > 0]
+    layers = [
+        ("Before: one point per block group (2020 population centre)", inc, len(inc)),
+        ("After: one point per census block (split by 2020 block population)", blk, len(blk)),
+    ]
+    z = bg.set_index("GEOID").geometry[zoom_bg].centroid
+    zx, zy = z.x, z.y
+
+    fig, axes = plt.subplots(2, 2, figsize=(15, 15.5), dpi=170,
+                             gridspec_kw={"height_ratios": [1.15, 1]})
+    for col, (title, pts, n) in enumerate(layers):
+        for row in range(2):
+            ax = axes[row, col]
+            _base(ax, bg_land, land)
+            zoomed = row == 1
+            scale = POV_AREA_PER_PERSON * (6 if zoomed else 1)
+            p = pts.sort_values("h_pov100", ascending=False)
+            ax.scatter(p["x_i"], p["y_i"], s=p["h_pov100"] * scale, facecolor=RED,
+                       edgecolor=RED_EDGE, alpha=0.5, linewidths=0.3 if not zoomed else 0.6,
+                       zorder=3)
+            if zoomed:
+                ax.set_xlim(zx - zoom_half, zx + zoom_half)
+                ax.set_ylim(zy - zoom_half, zy + zoom_half)
+                ax.set_title(f"Close-up ({2 * zoom_half / 1000:g} km × {2 * zoom_half / 1000:g} km); "
+                             f"grey lines = block-group boundaries", fontsize=9.5, color=INK, loc="left")
+                ax.plot([zx - zoom_half + 120, zx - zoom_half + 620], [zy - zoom_half + 120] * 2,
+                        color=INK, linewidth=2, solid_capstyle="butt")
+                ax.text(zx - zoom_half + 370, zy - zoom_half + 160, "500 m", ha="center",
+                        va="bottom", fontsize=8, color=INK)
+                for s in ax.spines.values():
+                    s.set_visible(True); s.set_color("#888888")
+            else:
+                ax.add_patch(plt.Rectangle((zx - zoom_half, zy - zoom_half), 2 * zoom_half,
+                                           2 * zoom_half, fill=False, edgecolor=INK,
+                                           linewidth=1.2, zorder=5))
+                _scalebar(ax, land)
+                ax.set_title(f"{title}\n{n:,} demand points, {p['h_pov100'].sum():,.0f} people "
+                             f"below poverty", fontsize=10.5, color=INK, loc="left")
+                key = (50, 200, 800) if col == 0 else (10, 50, 200)
+                ax.legend(handles=[
+                    Line2D([], [], marker="o", linestyle="", markersize=np.sqrt(v * scale),
+                           markerfacecolor=RED, markeredgecolor=RED_EDGE, alpha=0.6,
+                           label=f"{v:,} people") for v in key],
+                    loc="upper left", fontsize=8, frameon=True, framealpha=0.92,
+                    labelspacing=1.2, borderpad=0.9, edgecolor="#cccccc")
+    fig.suptitle("Where demand sits in the model: people below the poverty line (ACS 2020–24), "
+                 "Suffolk County, MA\nCircle area ∝ people below poverty (same scale left and right; "
+                 "close-ups enlarged 6×)", x=0.01, ha="left", fontsize=12, color=INK)
+    fig.tight_layout(rect=(0, 0, 1, 0.965))
+    return fig
+
+
 def static(deltas):
-    bg, bg_land, land, pantries, special = load()
+    bg, bg_land, land, pantries, special, dem = load()
     m = len(pantries)
     for delta in deltas:
         grid = make_grid(delta, land, bg, m=m, special_geom=special)
         fig, ax = plt.subplots(figsize=(10, 11), dpi=170)
-        draw_poverty_map(ax, bg, bg_land, land, pantries, grid, delta)
+        draw_poverty_map(ax, bg, bg_land, land, pantries, grid, delta, dem)
         fig.tight_layout()
         fig.savefig(OUT / f"poverty_map_{delta:g}.png", facecolor="white")
         plt.close(fig)
@@ -178,17 +242,22 @@ def static(deltas):
 
     grid = make_grid(500, land, bg, m=m, special_geom=special)
     fig, ax = plt.subplots(figsize=(11, 11), dpi=170)
-    draw_qa_map(ax, fig, bg, bg_land, land, pantries, grid, 500)
+    draw_qa_map(ax, fig, bg, bg_land, land, pantries, grid, 500, dem)
     fig.tight_layout()
     fig.savefig(OUT / "qa_map.png", facecolor="white")
     plt.close(fig)
     print("wrote qa_map.png")
 
+    fig = draw_before_after(bg, bg_land, land, dem)
+    fig.savefig(OUT / "demand_before_after.png", facecolor="white")
+    plt.close(fig)
+    print("wrote demand_before_after.png")
+
 
 def interactive(start=500):
     from matplotlib.widgets import Slider
 
-    bg, bg_land, land, pantries, special = load()
+    bg, bg_land, land, pantries, special, dem = load()
     m = len(pantries)
     fig, ax = plt.subplots(figsize=(10, 11))
     fig.subplots_adjust(bottom=0.08)
@@ -197,7 +266,7 @@ def interactive(start=500):
 
     def redraw(delta):
         grid = make_grid(delta, land, bg, m=m, special_geom=special)
-        draw_poverty_map(ax, bg, bg_land, land, pantries, grid, delta)
+        draw_poverty_map(ax, bg, bg_land, land, pantries, grid, delta, dem)
         fig.canvas.draw_idle()
 
     slider.on_changed(redraw)

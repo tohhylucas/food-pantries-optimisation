@@ -1,6 +1,6 @@
 # Full check log
 
-Every value recorded by `src/build_data.py` on 2026-11-11. See README.md for the plain-language summary.
+Every value recorded by `src/build_data.py` on 2026-11-25. See README.md for the plain-language summary.
 
 - **acs_rows**: 681
 - **acs_rows_expected_681**: true
@@ -16,6 +16,16 @@ Every value recorded by `src/build_data.py` on 2026-11-11. See README.md for the
 - **center_source_counts**: {"cenpop2020": 671, "centroid": 10}
 - **centers_outside_own_polygon**: [{"GEOID": "250250102062", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 5.4}, {"GEOID": "250259815011", "center_source": "cenpop2020", "included": false, "center_dist_outside_m": 327.4}, {"GEOID": "250250920003", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 41.4}, {"GEOID": "250259901010", "center_source": "centroid", "included": false, "center_dist_outside_m": 569.0}, {"GEOID": "250251008004", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 9.8}, {"GEOID": "250250605013", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 23.5}, {"GEOID": "250259818001", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 421.9}, {"GEOID": "250251707011", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 10.4}, {"GEOID": "250259801011", "center_source": "centroid", "included": true, "center_dist_outside_m": 157.8}, {"GEOID": "250251703021", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 1.9}, {"GEOID": "250250001022", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 84.6}, {"GEOID": "250251701013", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 7.4}, {"GEOID": "250251606014", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 5.3}, {"GEOID": "250250203052", "center_source": "cenpop2020", "included": true, "center_dist_outside_m": 9.3}]
 - **polygon_centroids_outside_own_polygon**: 10
+- **blocks_suffolk**: 7280
+- **blocks_populated**: 5549
+- **block_pop_sum_mismatch_vs_cenpop**: none
+- **block_points_outside_own_bg**: 0
+- **demand_bg_without_populated_blocks**: [{"GEOID": "250259801011", "h_total": 27, "h_pov100": 27, "h_pov185": 27}]
+- **demand_points**: 5537
+- **demand_points_by_source**: {"block": 5536, "bg_point": 1}
+- **block_demand_sums_match_bg**: true
+- **block_demand_totals**: {"h_total": 740754.0, "h_pov100": 119889.0, "h_pov185": 210891.0}
+- **demand_points_per_bg**: {"min": 1, "median": 7.0, "max": 33}
 - **county_area_km2_dissolved**: 311.36
 - **county_area_km2_tiger**: 311.36
 - **county_symdiff_km2**: 0.0
@@ -32,11 +42,14 @@ Every value recorded by `src/build_data.py` on 2026-11-11. See README.md for the
 - **grid_1000_no_geoid**: 0
 - **grid_1000_special_area**: 33
 - **reach_1000**: {"pairs": 26518, "A_i_min": 4, "A_i_median": 39.0, "A_i_max": 82, "empty_A_i": "none"}
+- **reach_blocks_1000**: {"pairs": 209620, "A_i_min": 2, "A_i_median": 36.0, "A_i_max": 82, "empty_A_i": "none"}
 - **grid_500_N**: 617
 - **grid_500_no_geoid**: 0
 - **grid_500_special_area**: 116
 - **reach_500**: {"pairs": 64875, "A_i_min": 9, "A_i_median": 98.0, "A_i_max": 165, "empty_A_i": "none"}
+- **reach_blocks_500**: {"pairs": 526266, "A_i_min": 7, "A_i_median": 95.0, "A_i_max": 166, "empty_A_i": "none"}
 - **grid_250_N**: 2429
 - **grid_250_no_geoid**: 0
 - **grid_250_special_area**: 445
 - **reach_250**: {"pairs": 216358, "A_i_min": 35, "A_i_median": 327.0, "A_i_max": 500, "empty_A_i": "none"}
+- **reach_blocks_250**: {"pairs": 1777361, "A_i_min": 27, "A_i_median": 324.0, "A_i_max": 500, "empty_A_i": "none"}
