@@ -78,6 +78,7 @@ zip if it is missing.
   | `h_pov100` | People **below the poverty line** | under 0.50 and 0.50–0.99 |
   | `h_pov185` | People below **1.85 × the poverty line** | under 0.50 up to 1.50–1.84 |
   | `moe_pov100` | Margin of error for `h_pov100` (Census formula: square root of the sum of squared margins) | |
+  | `moe_pov185` | Margin of error for `h_pov185`, same formula over the same five bands | |
 
 - Block groups with nobody in them are marked `included = False`. They stay in the file
   but are left out of the model.
@@ -285,6 +286,7 @@ grid (Step 5). Code: `distances()`.*
 | File | One row per | What's in it |
 |---|---|---|
 | `blockgroups.geojson` | block group | `GEOID`, name, the four people counts, centre `x_i, y_i` (metres), `included`, shape |
+| `blockgroup_demand.csv` | block group | `GEOID`, `included`, `h_pov100`, `h_pov185`, `moe_pov100`, `moe_pov185`. Margins are kept at block-group level: the robust model's uncertainty is per block group, and each block's share of an increase is its `share` in `demand_blocks.csv` |
 | `demand_blocks.csv` | demand point (populated census block) | `i` (15-digit block ID, or the block-group ID for a fallback point), block group `GEOID`, `x_i, y_i` (metres), `lon, lat`, 2020 block population `pop_block`, its `share` of the block group, the three people counts, `source` (`block` or `bg_point`) |
 | `county_land.geojson` | n/a | The county land outline (water removed) |
 | `county_land_outline.csv` | outline vertex | The same outline as plain `X, Y` (metres), one ring after another separated by an empty row, for plotting (e.g. in the Julia notebook) |
@@ -331,7 +333,8 @@ measuring anything.
    (Step 2b). Poverty is often concentrated in particular buildings, so this is an
    approximation, but it is closer than putting everyone at one centre point.
 2. **Census estimates are taken at face value.** The poverty counts are survey estimates
-   with large margins of error (see `moe_pov100`). They are used as exact numbers.
+   with large margins of error (see `moe_pov100`, `moe_pov185`). The nominal model uses them
+   as exact numbers; the robust model lets them rise by up to their margin.
 3. **Travel distance is straight-line distance**, capped at 3 km. Real walking
    or transit trips are longer, especially across water, highways and rail lines.
 4. **The existing pantries are the GBFB network.** Independent pantries (e.g. in Winthrop)
