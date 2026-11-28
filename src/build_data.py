@@ -68,6 +68,7 @@ def load_acs() -> pd.DataFrame:
     df["h_pov100"] = E(2) + E(3)
     df["h_pov185"] = E(2) + E(3) + E(4) + E(5) + E(6)
     df["moe_pov100"] = np.sqrt(M(2) ** 2 + M(3) ** 2)
+    df["moe_pov185"] = np.sqrt(sum(M(k) ** 2 for k in range(2, 7)))
     df["included"] = df["h_total"] > 0
 
     log("acs_rows", len(df))
@@ -97,7 +98,8 @@ def load_blockgroups(acs: pd.DataFrame) -> gpd.GeoDataFrame:
     log("geoid_in_tiger_not_acs", sorted(tiger_ids - acs_ids) or "none")
 
     gdf = bg[["GEOID", "ALAND", "AWATER", "geometry"]].merge(
-        acs[["GEOID", "NAME", "h_total", "h_pov100", "h_pov185", "moe_pov100", "included"]],
+        acs[["GEOID", "NAME", "h_total", "h_pov100", "h_pov185", "moe_pov100", "moe_pov185",
+             "included"]],
         on="GEOID", how="inner",
     )
     gdf = gpd.GeoDataFrame(gdf, geometry="geometry", crs=CRS_M)
@@ -574,6 +576,7 @@ zip if it is missing.
   | `h_pov100` | People **below the poverty line** | under 0.50 and 0.50–0.99 |
   | `h_pov185` | People below **1.85 × the poverty line** | under 0.50 up to 1.50–1.84 |
   | `moe_pov100` | Margin of error for `h_pov100` (Census formula: square root of the sum of squared margins) | |
+  | `moe_pov185` | Margin of error for `h_pov185`, same formula over the same five bands | |
 
 - Block groups with nobody in them are marked `included = False`. They stay in the file
   but are left out of the model.
@@ -772,6 +775,7 @@ grid (Step 5). Code: `distances()`.*
 | File | One row per | What's in it |
 |---|---|---|
 | `blockgroups.geojson` | block group | `GEOID`, name, the four people counts, centre `x_i, y_i` (metres), `included`, shape |
+| `blockgroup_demand.csv` | block group | `GEOID`, `included`, `h_pov100`, `h_pov185`, `moe_pov100`, `moe_pov185`. Margins are kept at block-group level: the robust model's uncertainty is per block group, and each block's share of an increase is its `share` in `demand_blocks.csv` |
 | `demand_blocks.csv` | demand point (populated census block) | `i` (15-digit block ID, or the block-group ID for a fallback point), block group `GEOID`, `x_i, y_i` (metres), `lon, lat`, 2020 block population `pop_block`, its `share` of the block group, the three people counts, `source` (`block` or `bg_point`) |
 | `county_land.geojson` | n/a | The county land outline (water removed) |
 | `county_land_outline.csv` | outline vertex | The same outline as plain `X, Y` (metres), one ring after another separated by an empty row, for plotting (e.g. in the Julia notebook) |
@@ -804,7 +808,8 @@ measuring anything.
    (Step 2b). Poverty is often concentrated in particular buildings, so this is an
    approximation, but it is closer than putting everyone at one centre point.
 2. **Census estimates are taken at face value.** The poverty counts are survey estimates
-   with large margins of error (see `moe_pov100`). They are used as exact numbers.
+   with large margins of error (see `moe_pov100`, `moe_pov185`). The nominal model uses them
+   as exact numbers; the robust model lets them rise by up to their margin.
 3. **Travel distance is straight-line distance**, capped at {dmax / 1000:g} km. Real walking
    or transit trips are longer, especially across water, highways and rail lines.
 4. **The existing pantries are the GBFB network.** Independent pantries (e.g. in Winthrop)
@@ -832,6 +837,16 @@ Run from the project folder:
 {fence}
 """
     (OUT / "README.md").write_text(text, encoding="utf-8")
+
+
+def write_bg_demand(bg: gpd.GeoDataFrame) -> None:
+    """Block-group estimates and 90% margins of error, for the robust model."""
+    cols = ["GEOID", "included", "h_pov100", "h_pov185", "moe_pov100", "moe_pov185"]
+    bg[cols].sort_values("GEOID").round(4).to_csv(OUT / "blockgroup_demand.csv", index=False)
+    inc = bg[bg["included"]]
+    for c in ["pov100", "pov185"]:
+        rel = (inc[f"moe_{c}"] / inc[f"h_{c}"]).replace(np.inf, np.nan)
+        log(f"moe_{c}_median_relative", round(float(rel.median()), 3))
 
 
 def write_outline(geom, path: Path, tol_m: float = 5.0) -> None:
@@ -867,7 +882,7 @@ def main(argv=None) -> int:
     m = len(pantries)
 
     # blockgroups.geojson
-    keep = ["GEOID", "name", "h_total", "h_pov100", "h_pov185", "moe_pov100",
+    keep = ["GEOID", "name", "h_total", "h_pov100", "h_pov185", "moe_pov100", "moe_pov185",
             "x_i", "y_i", "center_source", "x_centroid", "y_centroid", "x_cenpop",
             "y_cenpop", "pop2020", "included", "center_inside_polygon",
             "center_dist_outside_m", "geometry"]
@@ -875,6 +890,7 @@ def main(argv=None) -> int:
     gpd.GeoDataFrame({"name": ["Suffolk County, MA (land)"]}, geometry=[land], crs=CRS_M) \
         .to_crs(CRS_LL).to_file(OUT / "county_land.geojson", driver="GeoJSON")
     write_outline(land, OUT / "county_land_outline.csv")
+    write_bg_demand(bg)
 
     blocks.round({"x_i": 1, "y_i": 1, "share": 6, "h_total": 4, "h_pov100": 4,
                   "h_pov185": 4}).to_csv(OUT / "demand_blocks.csv", index=False)
